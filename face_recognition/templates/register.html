@@ -1,0 +1,99 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>Register Your Face</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--    <h1>Register Your Face</h1>-->
+<!--    <form method="post" enctype="multipart/form-data">-->
+<!--        {% csrf_token %}-->
+<!--        {{ form.as_p }}-->
+
+<!--        &lt;!&ndash; Show captured image &ndash;&gt;-->
+<!--        {% if captured_image %}-->
+<!--            <h3>Captured Image:</h3>-->
+<!--            <img src="{{ captured_image }}" alt="Captured Image" width="200">-->
+<!--            <input type="hidden" name="captured_image" value="true">-->
+<!--        {% endif %}-->
+
+<!--        &lt;!&ndash; Buttons &ndash;&gt;-->
+<!--        <button type="submit" name="capture">Capture from Webcam</button>-->
+<!--        <button type="submit">Submit</button>-->
+<!--    </form>-->
+
+<!--    {% if error %}-->
+<!--        <p style="color: red;">{{ error }}</p>-->
+<!--    {% endif %}-->
+<!--</body>-->
+<!--</html>-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Register Your Face</title>
+    <script>
+        let videoStream;
+
+        // Start the webcam stream
+        function startWebcam() {
+            const video = document.getElementById("webcam");
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(err => {
+                    console.error("Error accessing webcam:", err);
+                    alert("Could not access webcam.");
+                });
+        }
+
+        // Capture a frame from the webcam
+        function captureImage() {
+            const video = document.getElementById("webcam");
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL("image/jpeg"); // Convert to base64 image
+        }
+
+        // Send the captured image to the backend
+        function sendToBackend() {
+            const image = captureImage();
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch("http://127.0.0.1:8000/register/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ image: image })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Face registered successfully!");
+                    window.location.href = "http://127.0.0.1:8000/success/";
+                } else {
+                    alert(data.error || "An error occurred.");
+                }
+            })
+            .catch(err => {
+                console.error("Error sending image to backend:", err);
+                alert("An error occurred. Please try again.");
+            });
+        }
+    </script>
+</head>
+<body onload="startWebcam()">
+    <h1>Register Your Face</h1>
+    <video id="webcam" autoplay playsinline width="640" height="480"></video>
+    <button onclick="sendToBackend()">Capture and Register</button>
+    {% csrf_token %}
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>Face Recognition</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--    <h1>Face Recognition</h1>-->
+<!--    {% if result %}-->
+<!--        <p>{{ result }}</p>-->
+<!--    {% endif %}-->
+<!--    <form method="post">-->
+<!--        {% csrf_token %}-->
+<!--        <button type="submit">Start Recognition</button>-->
+<!--    </form>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>Face Recognition</title>-->
+<!--    <script>-->
+<!--        let videoStream;-->
+
+<!--        // Start the webcam stream-->
+<!--        function startWebcam() {-->
+<!--            const video = document.getElementById("webcam");-->
+<!--            navigator.mediaDevices.getUserMedia({ video: true })-->
+<!--                .then(stream => {-->
+<!--                    videoStream = stream;-->
+<!--                    video.srcObject = stream;-->
+<!--                    video.play();-->
+<!--                })-->
+<!--                .catch(err => {-->
+<!--                    console.error("Error accessing webcam:", err);-->
+<!--                    alert("Could not access webcam.");-->
+<!--                });-->
+<!--        }-->
+
+<!--        // Capture a frame from the webcam and send to the backend-->
+<!--        function recognizeFace() {-->
+<!--            const video = document.getElementById("webcam");-->
+<!--            const canvas = document.createElement("canvas");-->
+<!--            canvas.width = video.videoWidth;-->
+<!--            canvas.height = video.videoHeight;-->
+<!--            const ctx = canvas.getContext("2d");-->
+<!--            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);-->
+<!--            const image = canvas.toDataURL("image/jpeg"); // Convert to base64 image-->
+
+<!--            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;-->
+
+<!--            fetch("http://127.0.0.1:8000/recognize/", {-->
+<!--                method: "POST",-->
+<!--                headers: {-->
+<!--                    "Content-Type": "application/json",-->
+<!--                    "X-CSRFToken": csrfToken-->
+<!--                },-->
+<!--                body: JSON.stringify({ image: image })-->
+<!--            })-->
+<!--            .then(response => response.json())-->
+<!--            .then(data => {-->
+<!--                if (data.success) {-->
+<!--                    alert("Face recognized: " + data.user);-->
+<!--                } else {-->
+<!--                    alert("Unknown face or failed recognition.");-->
+<!--                }-->
+<!--            })-->
+<!--            .catch(err => {-->
+<!--                console.error("Error sending image to backend:", err);-->
+<!--                alert("An error occurred. Please try again.");-->
+<!--            });-->
+<!--        }-->
+<!--    </script>-->
+<!--</head>-->
+<!--<body onload="startWebcam()">-->
+<!--    <h1>Face Recognition</h1>-->
+<!--    <video id="webcam" autoplay playsinline width="640" height="480"></video>-->
+<!--    <button onclick="recognizeFace()">Capture and Recognize</button>-->
+<!--    {% csrf_token %}-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Face Registration and Recognition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #videoContainer {
+            display: none;
+            margin-bottom: 20px;
+        }
+        #controls button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script>
+        let videoStream;
+
+        // Start the webcam stream
+        function startWebcam() {
+            const video = document.getElementById("webcam");
+            const videoContainer = document.getElementById("videoContainer");
+            videoContainer.style.display = "block";
+
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(err => {
+                    console.error("Error accessing webcam:", err);
+                    alert("Could not access webcam.");
+                });
+        }
+
+        // Stop the webcam stream
+        function stopWebcam() {
+            if (videoStream) {
+                const tracks = videoStream.getTracks();
+                tracks.forEach(track => track.stop());
+                videoStream = null;
+            }
+            document.getElementById("videoContainer").style.display = "none";
+        }
+
+        // Capture a frame from the webcam
+        function captureImage() {
+            const video = document.getElementById("webcam");
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL("image/jpeg"); // Convert to base64 image
+        }
+
+        // Register face
+        function registerFace() {
+            const image = captureImage();
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch("http://127.0.0.1:8000/register/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ image: image })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Face registered successfully!");
+                    window.location.href = "http://127.0.0.1:8000/success/";
+                } else {
+                    alert(data.error || "An error occurred.");
+                }
+            })
+            .catch(err => {
+                console.error("Error sending image to backend:", err);
+                alert("An error occurred. Please try again.");
+            });
+        }
+
+        // Recognize face
+        function recognizeFace() {
+            const image = captureImage();
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch("http://127.0.0.1:8000/recognize/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ image: image })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Face recognized: " + data.user);
+                } else {
+                    alert("Unknown face or failed recognition.");
+                }
+            })
+            .catch(err => {
+                console.error("Error sending image to backend:", err);
+                alert("An error occurred. Please try again.");
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Face Registration and Recognition</h1>
+    <div id="controls">
+        <button onclick="startWebcam()">Start Webcam</button>
+        <button onclick="stopWebcam()">Stop Webcam</button>
+    </div>
+    <div id="videoContainer">
+        <video id="webcam" autoplay playsinline width="640" height="480"></video>
+        <div>
+            <button onclick="registerFace()">Register Face</button>
+            <button onclick="recognizeFace()">Recognize Face</button>
+        </div>
+    </div>
+    {% csrf_token %}
+</body>
+</html>

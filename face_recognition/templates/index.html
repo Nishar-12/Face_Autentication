@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Detection</title>
+</head>
+<body>
+    <h1>Face Detection</h1>
+    <form id="uploadForm" enctype="multipart/form-data" method="post" action="/detect/">
+        {% csrf_token %}
+        <input type="file" name="image" required>
+        <button type="submit">Upload and Detect</button>
+    </form>
+
+    <div id="result" style="margin-top: 20px;">
+        <h2>Result:</h2>
+        <img id="outputImage" src="" alt="" style="max-width: 500px; display: none;">
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/detect/', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.status === 'success') {
+                const outputImage = document.getElementById('outputImage');
+                outputImage.src = data.processed_url;
+                outputImage.style.display = 'block';
+            }
+        };
+    </script>
+</body>
+</html>
